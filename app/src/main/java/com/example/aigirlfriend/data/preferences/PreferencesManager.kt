@@ -12,6 +12,7 @@ val Context.dataStore by preferencesDataStore(name = "settings")
 
 object UserPreferences {
     val API_KEY = stringPreferencesKey("api_key")
+    val MX_API_KEY = stringPreferencesKey("mx_api_key")
     val CHAT_HISTORY = stringPreferencesKey("chat_history")
     val DEFAULT_CITY = stringPreferencesKey("default_city")
 }
@@ -30,6 +31,22 @@ class PreferencesManager(private val context: Context) {
     suspend fun clearApiKey() {
         context.dataStore.edit { preferences ->
             preferences.remove(UserPreferences.API_KEY)
+        }
+    }
+
+    fun getMxApiKey(): Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[UserPreferences.MX_API_KEY]
+    }
+
+    suspend fun saveMxApiKey(key: String) {
+        context.dataStore.edit { preferences ->
+            preferences[UserPreferences.MX_API_KEY] = key
+        }
+    }
+
+    suspend fun clearMxApiKey() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(UserPreferences.MX_API_KEY)
         }
     }
 

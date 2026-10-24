@@ -32,6 +32,7 @@ import com.example.aigirlfriend.viewmodel.ChatViewModel
 fun StartScreen(viewModel: ChatViewModel) {
     var showSettings by remember { mutableStateOf(false) }
     var apiKeyInput by remember { mutableStateOf("") }
+    var mxApiKeyInput by remember { mutableStateOf("") }
 
     val infiniteTransition = rememberInfiniteTransition(label = "float")
 
@@ -108,14 +109,44 @@ fun StartScreen(viewModel: ChatViewModel) {
                         color = SecondaryText.copy(alpha = 0.6f),
                         fontSize = 11.sp
                     )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        "💹 妙想 API Key（可选，金融数据服务）：",
+                        color = SecondaryText.copy(alpha = 0.8f),
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = mxApiKeyInput,
+                        onValueChange = { mxApiKeyInput = it },
+                        placeholder = { Text("输入妙想 API Key（em_ 开头）", color = Color(0xFFCCCCCC)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Pink500,
+                            unfocusedBorderColor = Pink300
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "填入后可查询股票、基金、财经新闻等金融数据；同样仅保存在本地。",
+                        color = SecondaryText.copy(alpha = 0.6f),
+                        fontSize = 11.sp
+                    )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.setApiKey(apiKeyInput.trim())
+                        viewModel.setMxApiKey(mxApiKeyInput.trim())
                         showSettings = false
                         apiKeyInput = ""
+                        mxApiKeyInput = ""
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Pink500),
                     shape = RoundedCornerShape(12.dp)

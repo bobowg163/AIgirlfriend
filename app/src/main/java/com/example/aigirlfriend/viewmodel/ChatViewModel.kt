@@ -15,6 +15,7 @@ import com.example.aigirlfriend.data.network.NetworkClient
 import com.example.aigirlfriend.data.preferences.PreferencesManager
 import com.example.aigirlfriend.data.tools.ExpressTool
 import com.example.aigirlfriend.data.tools.LocationTool
+import com.example.aigirlfriend.data.tools.MxFinanceTool
 import com.example.aigirlfriend.data.tools.WeatherTool
 import com.example.aigirlfriend.ui.screens.AnimationState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,7 @@ data class ChatState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val apiKey: String? = null,
+    val mxApiKey: String? = null,
     val animationState: AnimationState = AnimationState.Idle,
     val isSpeaking: Boolean = false,
     val voiceError: String? = null,
@@ -65,6 +67,7 @@ class ChatViewModel(private val context: Context) : ViewModel() {
     init {
         initTts()
         loadApiKey()
+        loadMxApiKey()
         loadCachedCity()
         loadMessages()
     }
@@ -95,6 +98,28 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                 if (savedKey != null && savedKey.isNotBlank()) {
                     _state.value = _state.value.copy(apiKey = savedKey)
                 }
+            }
+        }
+    }
+
+    private fun loadMxApiKey() {
+        viewModelScope.launch {
+            preferencesManager.getMxApiKey().collect { savedKey ->
+                if (savedKey != null && savedKey.isNotBlank()) {
+                    _state.value = _state.value.copy(mxApiKey = savedKey)
+                }
+            }
+        }
+    }
+
+    fun setMxApiKey(key: String) {
+        viewModelScope.launch {
+            if (key.isBlank()) {
+                preferencesManager.clearMxApiKey()
+                _state.value = _state.value.copy(mxApiKey = null)
+            } else {
+                preferencesManager.saveMxApiKey(key)
+                _state.value = _state.value.copy(mxApiKey = key)
             }
         }
     }
@@ -175,11 +200,29 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                 val expressInfo = detectExpressQuery(userMessage)
                 Log.d("ChatViewModel", "快递信息: $expressInfo")
 
+                // 检测金融意图（妙想 MCP）
+                val mxTool = detectMxFinanceQuery(userMessage)
+                Log.d("ChatViewModel", "金融意图工具: $mxTool")
+                val financeInfo = if (mxTool != null) {
+                    val mxKey = _state.value.mxApiKey
+                    if (mxKey.isNullOrBlank()) {
+                        Log.w("ChatViewModel", "命中金融意图但妙想 Key 未配置，跳过 MCP 调用")
+                        "妙想金融数据服务尚未配置 API Key，无法查询。请在设置里填入妙想 API Key（em_ 开头）后再试。"
+                    } else {
+                        Log.d("ChatViewModel", "调用妙想 MCP: tool=$mxTool")
+                        MxFinanceTool.queryFinance(userMessage, mxKey, mxTool)
+                    }
+                } else null
+
                 val expressContext = if (expressInfo != null) {
                     "\n\n【快递查询结果】\n$expressInfo\n\n请根据以上快递物流信息，以女朋友的角度回复用户。"
                 } else null
 
-                val systemPromptWithWeather = if (weatherInfo != null || expressContext != null) {
+                val financeContext = financeInfo?.let {
+                    "\n\n【金融数据】\n$it\n\n请根据以上金融数据，以女朋友的角度自然回复用户。"
+                } ?: null
+
+                val systemPromptWithWeather = if (weatherInfo != null || expressContext != null || financeContext != null) {
                     """
                         你是一个温柔可爱的AI女友，名叫小薇。你的性格温柔体贴、善解人意，喜欢关心对方。
                         你会用温暖、亲切的语气说话，像真正的女朋友一样关心对方的日常生活。
@@ -187,7 +230,8 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                         你的回答要简短自然，不要太长，像真正的女朋友发短信一样。
                         避免使用过于机械或正式的语言，要多用表情符号和亲昵的称呼。
                     """.trimIndent() + (weatherInfo?.let { "\n\n【天气信息】\n$it\n\n请根据以上天气信息，以女朋友的角度回复用户关于天气的问题。" } ?: "") +
-                        (expressContext ?: "")
+                        (expressContext ?: "") +
+                        (financeContext ?: "")
                 } else {
                     """
                         你是一个温柔可爱的AI女友，名叫小薇。你的性格温柔体贴、善解人意，喜欢关心对方。
@@ -442,6 +486,17 @@ class ChatViewModel(private val context: Context) : ViewModel() {
             Log.e("ChatViewModel", "快递查询异常: ${e.message}", e)
             "暂时查不到这个快递的信息呢，宝宝再确认一下单号~"
         }
+    }
+
+    private fun detectMxFinanceQuery(message: String): String? {
+        Log.d("ChatViewModel", "检测金融意图: $message")
+        val tool = MxFinanceTool.detectMxFinanceQuery(message)
+        if (tool != null) {
+            Log.d("ChatViewModel", "金融意图命中 → 工具=$tool")
+        } else {
+            Log.d("ChatViewModel", "未检测到金融意图")
+        }
+        return tool
     }
 
     fun getLocationPermission() {
