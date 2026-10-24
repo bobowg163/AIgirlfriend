@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+  <groupId>com.squareup.okio</groupId>
+  <artifactId>okio-jvm</artifactId>
+  <version>3.9.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib</artifactId>
+      <version>1.9.0</version>
+    </dependency>
+  </dependencies>
+</module>
