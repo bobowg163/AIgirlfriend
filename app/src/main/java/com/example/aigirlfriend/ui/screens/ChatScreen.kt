@@ -66,6 +66,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     var showPicker by remember { mutableStateOf(false) }
     var pendingAttachment by remember { mutableStateOf<Attachment?>(null) }
     var apiKeyInput by remember { mutableStateOf("") }
+    var mxApiKeyInput by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     var isLongPressInProgress by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
@@ -185,6 +186,28 @@ fun ChatScreen(viewModel: ChatViewModel) {
                             unfocusedBorderColor = Pink300
                         )
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "💹 妙想 API Key（可选，金融数据服务）：",
+                        color = SecondaryText.copy(alpha = 0.8f),
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedTextField(
+                        value = mxApiKeyInput,
+                        onValueChange = { mxApiKeyInput = it },
+                        placeholder = { Text("输入妙想 API Key（em_ 开头）", color = Color(0xFFCCCCCC)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Pink500,
+                            unfocusedBorderColor = Pink300
+                        )
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "🔒 API Key 仅保存在本地设备，不会上传到任何服务器。",
@@ -209,6 +232,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 Button(
                     onClick = {
                         viewModel.setApiKey(apiKeyInput.trim())
+                        viewModel.setMxApiKey(mxApiKeyInput.trim())
                         showApiKeyDialog = false
                         inputText = ""
                     },
